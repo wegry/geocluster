@@ -1,17 +1,17 @@
 import csv
-import math
-import urllib.request
 import json
-import string
+import math
 import os
+import requests
+import string
 
-#Reads and writes from a file called cluster.csv in the same directory as it. Must have the following columns [name, address, longitude, latitude, hours, frequency, cluster]
+#Reads and writes from a file called cluster.csv in the same directory as it. Must have the following columns [name, address, longitude, latitude, cluster]
 
-print("________________________________________\n________________________________________\nThis program checks to see what geopoints (and therefore cluster) a potential client\n is nearest to.")
+print('{0}\n{0}\nThis program checks to see what geopoints (and therefore cluster) a potential point\n is nearest to.'.format('-'*40))
 
 #geopoints have names and addresses as well as geocoded points
 class geopoints:
-    "Has name, address, geocode, and frequency attribute"
+    'Has name, address, geocode, and frequency attribute'
     def __init__(self, name, address, lat = 0, long = 0, cluster = 0):
         self.name = name
         self.address = remove_commas(address)
@@ -34,79 +34,76 @@ class geopoints:
         return R * c
 
     def __str__(self):
-        return string.capwords(self.name + " " + self.address + " " + self.geocode.__str__())
+        return string.capwords(self.name + ' ' + self.address + ' ' + self.geocode.__str__())
 
     #Changes default lat long to actual address(hopefully)
     def __geocodeset__(self):
         if (len(self.address) > 0):
-            plussedAddress = ""
+            plussedAddress = ''
             for char in self.address:
-                if char == " ":
-                    char = "+"
+                if char == ' ':
+                    char = '+'
                 plussedAddress += char
             returnPoint = get_lat_long(plussedAddress)
             self.geocode = Point(returnPoint[0], returnPoint[1])
 
 def remove_commas(le_string):
-    return_string = ""
+    return_string = ''
     for character in le_string:
-        if character != ",":
+        if character != ',':
             return_string += character
     return return_string
 
 class Point:
-    "Has latitude and longitude attributes"
+    'Has latitude and longitude attributes'
     def __init__(self, lat, lon): #for the uninitiated, lat and lon
         self.lat = lat
         self.lon = lon
 
     def __str__(self):
-        return "(" + str(self.lat) + ", " + str(self.lon) + ")"
+        return '(' + str(self.lat) + ', ' + str(self.lon) + ')'
 
 def get_lat_long(location):
     if (len(location) > 0):
-        output = "json"
-        request = "http://maps.google.com/maps/api/geocode/%s?address=%s&sensor=false" % (output, location)
-        rawJSON = urllib.request.urlopen(request)
-        response = rawJSON.read()
-        data = json.loads(response.decode(), strict = False)
+        output = 'json'
+        request = 'http://maps.google.com/maps/api/geocode/{}?address={}&sensor=false'.format(output, location)
+        rawJSON = requests.get(request)
+        data = rawJSON.json()
         return_tuple = [0, 0]
         try:
-            return_tuple[0] = data["results"][0]["geometry"]["location"]["lat"]
-            return_tuple[1] = data["results"][0]["geometry"]["location"]["lng"]
+            return_tuple[0] = data['results'][0]['geometry']['location']['lat']
+            return_tuple[1] = data['results'][0]['geometry']['location']['lng']
         except BaseException:
-            print("Something went wrong...")
-
-    rawJSON.close()
+            print('Something went wrong...')
     return return_tuple
 
 def geopoints_creation():
     #Getting the geopoints's name from user input
-        print("______________________________________________________\n")
-        print("You selected the option to find the closest cluster to a particular geopoints.\n")
-        name = ""
+        print('______________________________________________________\n')
+        print('You selected the option to find the closest cluster to a particular geopoints.\n')
+        name = ''
         while (True):
-            name = input("What's this geopoints's name? ").strip()
-            print("Is", name, "correct? ", end = "")
-            confirmation = input("(y/n) ").casefold()
-            if confirmation == "y" or confirmation == "yes":
+            name = input('What\'s this geopoints\'s name? ').strip()
+            print('Is', name, 'correct? ', end = '')
+            confirmation = input('(y/n) ').casefold()
+            if confirmation == 'y' or confirmation == 'yes':
                 print()
                 break
             else:
-                print("Try again. ", end = "")
+                print('Try again. ', end = '')
 
         #Getting their address
-        address = ""
+        address = ''
         while (True):
-            print("What's ", name, "'s address?", sep = "", end = " ")
+            print('What\'s ', name, '\'s address?', sep = '', end = ' ')
             address = input()
-            print("Is", address, "correct? ", end = "")
-            confirmation = input("(y/n) ").casefold()
-            if confirmation == "y" or confirmation == "yes":
+            print('Is', address, 'correct? ', end = '')
+            confirmation = input('(y/n) ').casefold()
+            if confirmation == 'y' or confirmation == 'yes':
                 print()
                 break
             else:
-                print("Try again.", end = " ")
+                print('Try again.', end = ' ')
 
         return geopoints(name, address)
 
@@ -114,19 +111,19 @@ def geopoints_creation():
 
 #parses the incoming csv
 list = []
-with open("cluster.csv") as csvfile:
+with open('cluster.csv') as csvfile:
     infoReader = csv.reader(csvfile, delimiter=',')
 
-    print("\nReading in geopoints list...", end = "")
+    print('\nReading in geopoints list...', end = '')
     for row in infoReader:
         column = []
         for item in row:
             column.append(' '.join(item.split()))
         list.append(column)
-    print ("done.", len(list), "entries read.\n")
+    print ('done.', len(list), 'entries read.\n')
 
 if len(list) == 0:
-    print("The list is empty, so nothing can be done...")
+    print('The list is empty, so nothing can be done...')
     quit()
 
 header = list.pop(0) #takes care of header till later
@@ -134,29 +131,29 @@ header = list.pop(0) #takes care of header till later
 geopoints_list = []
 for row in list:
     column = row
-    geopoints_list.append(geopoints(column[0], column[1], column[3], column[2], column [6], column[5], column[4], column [7]))
+    geopoints_list.append(geopoints(column[0], column[1], column[3], column[2], column [6], column[5], column[4], column [7])) #fix this
 
-choice = ""
+choice = ''
 #Validates input
-while (choice != "quit" and choice != "q"):
-    print("What would you like to do?\n")
-    print("A) Enter an address to see what cluster it would belong to")
-    print("Or enter 'quit' (or just q) to exit the program")
+while (choice != 'quit' and choice != 'q'):
+    print('What would you like to do?\n')
+    print('A) Enter an address to see what cluster it would belong to')
+    print('Or enter \'quit\' (or just q) to exit the program')
     while (True):
-        choice = input("\tYour choice--> ").strip().casefold()
-        if (choice == "a" or choice == "quit" or choice == "q"):
+        choice = input('\tYour choice--> ').strip().casefold()
+        if (choice == 'a' or choice == 'quit' or choice == 'q'):
             break
         else:
-            print("Try again...")
+            print('Try again...')
 
-    if choice == "a":
+    if choice == 'a':
         new_geopoints = geopoints_creation()
         if (new_geopoints.geocode.lat == 0 and new_geopoints.geocode.lon == 0):
-            print("That address couldn't be found on Google Maps.")
+            print('That address couldn\'t be found on Google Maps.')
         else:
-            print("Matching", new_geopoints.__str__(), "to existing geopoints...\n")
+            print('Matching', new_geopoints.__str__(), 'to existing geopoints...\n')
             closest = None
-            closest_distance = float("inf")
+            closest_distance = float('inf')
 
             list_length = len(geopoints_list)
             for i in range(0, list_length):
@@ -165,25 +162,25 @@ while (choice != "quit" and choice != "q"):
                     closest_distance =  current_distance
                     closest = geopoints_list[i]
 
-            print("The closest geopoints in the list is ", closest.name, ". They're ", closest_distance.__round__(), " miles away and their address is ", closest.address, ".", sep = "")
+            print('The closest geopoints in the list is ', closest.name, '. They\'re ', closest_distance.__round__(), ' miles away and their address is ', closest.address, '.', sep = '')
             new_geopoints.cluster = closest.cluster
-            add = input("\nAdd the new geopoints to the geopoints list? (y/n) ").casefold()
+            add = input('\nAdd the new geopoints to the geopoints list? (y/n) ').casefold()
             while(True):
-                if add == "y" or add == "yes":
+                if add == 'y' or add == 'yes':
                     geopoints_list.append(new_geopoints)
                     geopoints_list.sort(key = lambda geopoints : float(geopoints.frequency))
                     geopoints_list.sort(key = lambda geopoints : float(geopoints.hours))
                     geopoints_list.sort(key = lambda geopoints : int(geopoints.cluster))
-                    with open('temp.csv', "w", newline='') as csvfile:
+                    with open('temp.csv', 'w', newline='') as csvfile:
                         writer = csv.writer(csvfile, delimiter=',')
                         writer.writerow(header)
                         for person in geopoints_list:
-                            writer.writerow([person.name, person.address, person.geocode.lon, person.geocode.lat, person.frequency, person.cleanTime, person.cluster, person.])
-                    os.rename("temp.csv", "cluster.csv") #Overwrites old file after writing the new one's entirity
-                    print("\nDone!\n___________________________________________\n")
+                            writer.writerow([person.name, person.address, person.geocode.lon, person.geocode.lat, person.frequency, person.cleanTime, person.cluster])
+                    os.rename('temp.csv', 'cluster.csv') #Overwrites old file after writing the new one's entirity
+                    print('\nDone!\n{}\n'.format('_'*43))
                     break
-                elif add == "n" or add == "no":
+                elif add == 'n' or add == 'no':
                     break
                     pass
                 else:
-                    add = input("Try again. (y/n)")
+                    add = input('Try again. (y/n)')
