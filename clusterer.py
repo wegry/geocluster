@@ -1,22 +1,7 @@
 import csv
-import scipy.cluster.vq as clusterer
+from nexus import Cluster
 from numpy  import *
-import warnings
-
-class Cluster:
-    def __init__(self):
-        self.size = 0
-        self.center = Point(0, 0)
-        self.points = []
-
-class Point:
-    "Has latitude and longitude attributes"
-    def __init__(self, lat, lon):
-        self.lat = lat
-        self.lon = lon
-
-    def toString(self):
-        return "(" + str(self.lat) + ", " + str(self.lon) + ")"
+import scipy.cluster.vq as clusterer
 
 #Plots centroids locations on a static Google Map
 def center_plotter(centroidList):
@@ -45,10 +30,10 @@ def Plotter(list, center):
     color = colors[5]
     markers = "&markers=%7Ccolor:green%7C" + str(center.lat) + "," + str(center.lon)
 
-    letter = ord("A")
+    letter = ord('A')
     for person in list:
-        if color != colors[int(person[6]) % (len(colors) - 1)]:
-            color = colors[int(person[6]) - 1]
+        if color != colors[int(person[4]) % (len(colors) - 1)]:
+            color = colors[int(person[4]) - 1]
  #           markers += "&markers=%7Ccolor:" + color
 
         if (len(URL_prefix +  markers) + 15 > 2000):
@@ -72,7 +57,7 @@ def scan_clustering(placement):
 
 #parses the incoming csv
 list = []
-with open("/Users/zachwegrzyniak/Desktop/cluster.csv") as csvfile:
+with open('cluster.csv') as csvfile:
     infoReader = csv.reader(csvfile, delimiter=',', quotechar=' ')
 
     for row in infoReader:
