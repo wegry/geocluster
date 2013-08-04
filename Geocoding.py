@@ -6,8 +6,8 @@ import json
 #This file takes a csv that contains a name column and one or more addresses
 #and turns them into parsed data that is geocoded
 
-#customers have names and addresses as well as geocoded points
-class customer:
+#geopoints have names and addresses as well as geocoded points
+class geopoint:
     "Has name, address, geocode, and frequency attribute"
     def __init__(self, name, address):
         self.name = name
@@ -21,7 +21,7 @@ class customer:
             return self.name + self.address + self.geocode.toString()
 
     #Changes default lat long to actual address(hopefully)
-    def __geocodeset__(self):
+    def geocodeset(self):
         if (len(self.address) > 0):
             plussedAddress = ""
             for char in self.address:
@@ -68,7 +68,7 @@ with open("/Users/zachwegrzyniak/Desktop/data.csv") as csvfile:
             column.append(item)
         list.append(column)
 
-#attempts to geocode customers with addresses
+#attempts to geocode geopoints with addresses
 codedList = []
 for person in list:
     if (float(person[3]) > 0):
@@ -79,12 +79,12 @@ for person in list:
             except IndexError:
                 continue
         goodAddress = goodAddress.strip()
-        tempCustomer = customer(person[0], goodAddress)
-        tempCustomer.frequency = person[3]
-        tempCustomer.cleanTime = person[4]
+        tempgeopoint = geopoint(person[0], goodAddress)
+        tempgeopoint.frequency = person[3]
+        tempgeopoint.cleanTime = person[4]
         if (len(goodAddress) > 0):
-            tempCustomer.__geocodeset__()
-            codedList.append(tempCustomer)
+            tempgeopoint.geocodeset()
+            codedList.append(tempgeopoint)
 
 #writes to current directory the parsed data
 with open('geocoded.csv', "w", newline='') as csvfile:
