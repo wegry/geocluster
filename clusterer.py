@@ -71,17 +71,20 @@ with open('cluster.csv') as csvfile:
 header = raw_file.pop(0) #takes care of header
 
 obs_vector = []
-for item in raw_file:
+for i in range(len(raw_file)):
+    item = raw_file[i]
     name = item[0]
     address = item[1]
     lat = item[2]
-    lon = item[3]
-    raw_file
+    lon = item[3]    
     if lat == '' or lon == '':
         temp = Geopoint(name, address)
-        obs_vector.append([temp.lon, temp.lat])
+        item[2] = temp.lat
+        item[3] = temp.lon
     else:
         temp = Geopoint(name, address, lat, lon)
+    
+    obs_vector.append([temp.lon, temp.lat])
 
         
 print(obs_vector)
