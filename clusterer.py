@@ -8,7 +8,6 @@ class Clusterer:
     
     def plot_center(centroid_list):
         print('\nThe centers of the clusters are located at: \n')
-        colors = ['black','purple','blue','red','orange','yellow', 'white']
         URL_prefix = 'http://maps.googleapis.com/maps/api/staticmap?size=640x640&maptype=roadmap\\'
         number = 1
         markers = ''
