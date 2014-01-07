@@ -92,7 +92,7 @@ print(obs_vector)
 
 matrix = array(obs_vector)
 
-numberOfClusters = 2
+numberOfClusters = 2 #start
 lastSolution = []
 
 for i in range (2, int(len(obs_vector)/2)):
