@@ -2,20 +2,21 @@ from math import atan2, cos, radians, sin, sqrt
 import requests
 
 class Cluster:
-	def __init__(self):
-		self.size = 0
-		self.center = Point(0, 0)
-		self.points = []
+	def __init__(self, center, points, letter='A'):
+		self.center = center
+		self.points = points
+		self.number = letter
 
+	def __str__(self):
+		point_list = '\n'.split([point for point in self.points])
+		form = (self.letter, self.center, point_list)
+		return 'Cluster {} is centered at {} with the following points associated:\n{}'.format(*form)
 
 class Point:
 	"Has latitude and lonitude attributes"
-	def __init__(self, lat, lon):
+	def __init__(self, lat=0, lon=0, *args):
 		self.lat = lat
 		self.lon = lon
-
-	def __str__(self):
-		return '({}, {})'.format(self.lat, self.lon)
 
 	def distance_between(self, other_point):
 		'''Haversine function from http://www.movable-type.co.uk/scripts/gis-faq-5.1.html'''
@@ -28,42 +29,50 @@ class Point:
 		c = 2 * atan2(sqrt(a), sqrt(1 - a))
 		return R * c
 
+	def is_uninitialized(self):
+		'''Make sure one of the coordinates is non-zero. There's only open
+		place it won't work...'''
+		return self.lat and self.lon
+
+	def __str__(self):
+		return '({}, {})'.format(self.lat, self.lon)
+
 
 class Geopoint(Point):
-	'''geopoints have names and addresses as well as geocoded points'''
-	def __init__(self, name, address, lat = 0, lon = 0, cluster = 0):
+	'''Geopoints have names and addresses as well as geocoded points'''
+	def __init__(self, name, address, lat=0, lon=0):
 		self.name = name
 		self.address = address.replace(',', '')
-		self.lat = float(lat)
-		self.lon = float(lon)
-		self.cluster = cluster
-		if lat == 0 and lon == 0:
+		if self.is_uninitialized:
 			self.geocodeset()
 
 	def geocodeset(self):
 		'''Change default lat lon to actual address(hopefully)'''
-		if len(self.address) != 0:
-			plussedAddress = self.address.replace(' ', '+')
-			returnPoint = self.get_lat_lon(plussedAddress)
-			self.lat = returnPoint[0]
-			self.lon =  returnPoint[1]
+		if self.address:
+			plussed_address = self.address.replace(' ', '+')
+			new_point = self.get_lat_lon(plussed_address)
+			self.geocode = Point(*new_point)
 
 	def get_lat_lon(self, location):
 		output = 'json'
-		request = 'http://maps.google.com/maps/api/geocode/{}?address={}&sensor=false'.format(output, location)
-		rawJSON = requests.get(request)
-		data = rawJSON.json()
-		return_tuple = [0, 0]
-		try:
-			return_tuple[0] = data['results'][0]['geometry']['location']['lat']
-			return_tuple[1] = data['results'][0]['geometry']['location']['lng']
-		except BaseException:
-			print('Something went wrong...')
+		base_url = 'http://maps.google.com/maps/api/geocode/{}?address={}&sensor=false'
+		request = base_url.format(output, location)
+		raw_json = requests.get(request)
+		data = raw_json.json()
 
-		return return_tuple
+		try:
+			location = data['results'][0]['geometry']['location']
+			return (location['lat'], location['lng'])
+		except Exception as e:
+			print('Something went wrong...{}'.format(e))
+
+		return (0, 0)
 
 	def __str__(self):
 		'''Override of the default. Returns a string representation of the 
 		Geopoint.'''
-		raw_rep = '{} {} {}, {}'.format(self.name, self.address, self.lat, self.lon)
+		raw_rep = '{} {} {}'.format(self.name, self.address, self.geocode)
 		return raw_rep.title()
+
+if __name__ == '__main__':
+	print(Geopoint('Boise Capitol', 'Capitol Boise ID'))

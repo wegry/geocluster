@@ -1,11 +1,13 @@
-import copy
 import csv
+
 from nexus import Cluster, Geopoint
-from numpy  import *
 import scipy.cluster.vq as kmean
+from numpy import *
 
 class Clump:
 	'''Plot centroid locations on a static Google Map.'''
+	def __init__(self):
+		self.clusters = []
 	
 	def plot_center(centroid_list):
 		print('\nThe centers of the clusters are located at: \n')
@@ -25,7 +27,7 @@ class Clump:
 		final_URL = '{}{}%7C&sensor=false'.format(URL_prefix, markers)
 		print('\nThe map of the cluster centers\n{}\n{}\n'.format(final_URL, '_'*37))
 
-	def plotter(raw_file, center):
+	def plotter(parsed_file, center):
 		if center.lat == 0 and center.lon == 0:
 			return 0
 		colors = ['black','purple','green','red','orange','yellow', 'white']
@@ -34,7 +36,7 @@ class Clump:
 		markers = '&markers=%7Ccolor:blue%7C{},{}'.format(center.lat, center.lon)
 
 		letter = ord('A')
-		for point in raw_file:
+		for point in parsed_file:
 			if color != colors[int(point[4]) % (len(colors) - 1)]:
 				color = colors[int(point[4]) - 1]
 
@@ -48,98 +50,95 @@ class Clump:
 		final_URL = '{}{}%7C&sensor=false'.format(URL_prefix, markers)
 		print(final_URL, end='\n\n')
 
-	def scan_clustering(placement):
+	def scan_clustering(self, placement):
 		'''Check that there is at least one point in each cluster'''
-		for i in range (len(placement)):
-			atLeastOne = False
-			for j in range (len(placement)):
-				if i != j and placement[i] == placement[j]:
-					atLeastOne = True
-			if atLeastOne == False:
+		for i in range(len(placement)):
+			if not placement[i]:
 				return False
 		return True
 
-#parses the incoming csv
-raw_file = []
-with open('cluster.csv') as csvfile:
-	infoReader = csv.reader(csvfile, delimiter='|', quoting=csv.QUOTE_NONE)
-	for row in infoReader:
-		column = []
-		for item in row:
-			column.append(item.strip())
-		raw_file.append(column)
+	#Procedure stuff
+	def read_existing_data(self, file_name='cluster.csv'):
+		'''Pull in a headered csv and return the header and data'''
+		parsed_file = []
+		with open(file_name) as csvfile:
+			info_reader = csv.reader(csvfile, delimiter='|', quoting=csv.QUOTE_NONE)
+			for row in info_reader:
+				column = []
+				for item in row:
+					column.append(item.strip())
+				parsed_file.append(column)
 
-header = raw_file.pop(0) #takes care of header
+		header = parsed_file.pop(0)
+		return (header, parsed_file) 
 
-obs_vector = []
-for i in range(len(raw_file)):
-	item = raw_file[i]
-	name = item[0]
-	address = item[1]
-	lat = item[2]
-	lon = item[3]    
-	if lat == '' or lon == '':
-		temp = Geopoint(name, address)
-		item[2] = temp.lat
-		item[3] = temp.lon
-	else:
-		temp = Geopoint(name, address, lat, lon)
-	
-	obs_vector.append([temp.lon, temp.lat])
+	def write_data(self, data, file_name='cluster.csv'):
+		'''Write sorted data out'''
+		with open(file_name, 'w') as updated_file:
+			data.sort(key=lambda data: data[4])
+			writer = csv.writer(updated_file, delimiter='|', quoting=csv.QUOTE_NONE)
+			writer.write_row(header)
+			for row in data:
+				writer.write_row(row)
 
-		
-print(obs_vector)
+	def create_observation_vector(self, parsed_file):
+		obs_vector = []
+		for i in range(len(parsed_file)):
+			item = parsed_file[i]
+			name = item[0]
+			address = item[1]
+			lat = item[2]
+			lon = item[3]    
+			if not lat or not lon:
+				temp = Geopoint(name, address)
+				item[2] = temp.lat
+				item[3] = temp.lon
+			else:
+				temp = Geopoint(name, address, lat, lon)
+			
+			obs_vector.append([temp.lon, temp.lat])
 
-matrix = array(obs_vector)
+		return obs_vector
 
-numberOfClusters = 2 #start
-lastSolution = []
+	def perform_clustering(self, observation):
+		matrix = array(obs_vector)
+		last_solution = None
+		for i in range (2, len(obs_vector)//2):
+			cluster = kmean.kmeans2(matrix, i, iter=1000, minit='random')
+			if Clump.scan_clustering(cluster[1]):
+				last_solution = cluster
+				print('Clusters =', i, cluster[1])
+		 
+		if not last_solution:
+			print('Rerun the program, this sort of thing takes time.')
+			exit(1) #change this
+		return last_solution
 
-for i in range (2, int(len(obs_vector)/2)):
-	cluster = kmean.kmeans2(matrix, i, iter=1000, minit='random')
-	if Clump.scan_clustering(cluster[1]):
-		numberOfClusters = i
-		lastSolution = cluster
-		print('Clusters =', i, cluster[1])
- 
-if lastSolution == []:
-	print('Rerun the program, this sort of thing takes time.')
-	exit(1)
-center = []
+	def initialize_clusters(self, codedList):
 
-for i in range (0, numberOfClusters):
-	center.append(Cluster())
+		for i in range (0, numberOfClusters):
+			center.append(Cluster())
+		codedList = []
+		for i in range (len(parsed_file)):
+			print(last_solution)
+			cluster = last_solution[1][i]
+			parsed_file[i][4] = cluster
+			clusterNode = center[cluster]
+			theCenter = center[cluster].center
+			if (theCenter.lat == 0 and theCenter.lon == 0):
+				theCenter.lat = last_solution[0][cluster][1]
+				theCenter.lon = last_solution[0][cluster][0]
 
-codedList = []
-for i in range (len(raw_file)):
-	print(lastSolution)
-	cluster = lastSolution[1][i]
-	raw_file[i][4] = cluster
-	clusterNode = center[cluster]
-	theCenter = center[cluster].center
-	if (theCenter.lat == 0 and theCenter.lon == 0):
-		theCenter.lat = lastSolution[0][cluster][1]
-		theCenter.lon = lastSolution[0][cluster][0]
-
-	clusterNode.size += 1
-	clusterNode.points.append(raw_file[i])
+			clusterNode.points.append(parsed_file[i])
 
 Clump.plot_center(center)
-
-with open('cluster.csv', 'w') as updated_file:
-	candidate = copy.deepcopy(raw_file)
-	candidate.sort(key=lambda row: row[4])
-	writer = csv.writer(updated_file, delimiter='|', quoting=csv.QUOTE_NONE)
-	writer.write_row(header)
-	for row in candidate:
-		writer.write_row(row)
 
 cluster_number = 1
 for centroid in center:
 	form = (cluster_number, centroid.center, centroid.size)
 	print('Cluster {} centered at {} size: {}'.format(*form))
 	print('A static map of the cluster')
-	Clump.plotter(centroid.points,centroid.center)
+	Clump.plotter(centroid.points, centroid.center)
 	i = ord('A')
 	pointsLined = 'from: Capitol Boise ID'
 	for points in centroid.points:
